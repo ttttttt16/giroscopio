@@ -1,0 +1,35 @@
+<div class="sensor-container">
+  <div class="sensor-section">
+    <h2>Acelerómetro</h2>
+    <div class="sensor-data">
+      <p>X: <span>{{motionData.acceleration?.x ?? 'No data'}}</span></p>
+      <p>Y: <span>{{motionData.acceleration?.y ?? 'No data'}}</span></p>
+      <p>Z: <span>{{motionData.acceleration?.z ?? 'No data'}}</span></p>
+    </div>
+  </div>
+
+  <div class="sensor-section">
+    <h2>Giroscopio</h2>
+    <div class="sensor-data">
+      <p>Alpha: <span>{{motionData.rotation?.alpha ?? 'No data'}}°</span></p>
+      <p>Beta: <span>{{motionData.rotation?.beta ?? 'No data'}}°</span></p>
+      <p>Gamma: <span>{{motionData.rotation?.gamma ?? 'No data'}}°</span></p>
+    </div>
+  </div>
+
+</div>
+<div class="sensor-container">
+  <div class="sensor-section">
+    <h2>Acelerómetro</h2>
+    <div class="sensor-data">
+      <canvas id="accelerationChart"></canvas> <!-- Gráfico para acelerómetro -->
+    </div>
+  </div>
+
+  <div class="sensor-section">
+    <h2>Giroscopio</h2>
+    <div class="sensor-data">
+      <canvas id="gyroscopeChart"></canvas> <!-- Gráfico para giroscopio -->
+    </div>
+  </div>
+</div>
