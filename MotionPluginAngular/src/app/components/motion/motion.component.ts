@@ -23,6 +23,13 @@ export class MotionComponent implements OnInit, OnDestroy, AfterViewInit {
   motionData: MotionData = {};
   private accelerationChart!: Chart;
   private gyroscopeChart!: Chart;
+  private time: number[] = []; // Array para el tiempo
+  private accelerationX: number[] = []; // Array para aceleración X
+  private accelerationY: number[] = []; // Array para aceleración Y
+  private accelerationZ: number[] = []; // Array para aceleración Z
+  private alpha: number[] = []; // Array para alpha (giroscopio)
+  private beta: number[] = []; // Array para beta (giroscopio)
+  private gamma: number[] = []; // Array para gamma (giroscopio)
 
   constructor(private motionS: MotionService) { }
 
@@ -33,7 +40,6 @@ export class MotionComponent implements OnInit, OnDestroy, AfterViewInit {
       this.updateCharts(); // Actualiza los gráficos con los nuevos datos
     });
   }
-
   ngAfterViewInit(): void {
     this.initCharts(); // Inicializa los gráficos después de que la vista se haya cargado
   }
@@ -48,58 +54,153 @@ export class MotionComponent implements OnInit, OnDestroy, AfterViewInit {
     const gyroCanvas = document.getElementById("gyroscopeChart") as HTMLCanvasElement;
 
     if (!accCanvas || !gyroCanvas) {
-      console.error("No se encontraron los elementos canvas.");
+      console.error("No se encontró el elemento canvas.");
       return;
     }
 
-    // Crea los gráficos
-    this.accelerationChart = new Chart(accCanvas, this.getChartConfig("Acelerómetro", ['X', 'Y', 'Z']));
-    this.gyroscopeChart = new Chart(gyroCanvas, this.getChartConfig("Giroscopio", ['Alpha', 'Beta', 'Gamma']));
+    // Crea el gráfico de aceleración con tiempo
+    this.accelerationChart = new Chart(accCanvas, this.getAccelerationChartConfig());
+
+    // Crea el gráfico de giroscopio con tiempo
+    this.gyroscopeChart = new Chart(gyroCanvas, this.getGyroscopeChartConfig());
   }
 
   private updateCharts(): void {
-    // Actualiza los gráficos con los datos de aceleración
-    if (this.accelerationChart && this.motionData.acceleration) {
-      this.accelerationChart.data.datasets[0].data = [
-        this.motionData.acceleration.x || 0,
-        this.motionData.acceleration.y || 0,
-        this.motionData.acceleration.z || 0
-      ];
+    // Agrega un nuevo punto de tiempo
+    const currentTime = Date.now();
+
+    // Añade el tiempo a la gráfica
+    this.time.push(currentTime);
+
+    // Añade los valores de aceleración a las gráficas
+    if (this.motionData.acceleration) {
+      this.accelerationX.push(this.motionData.acceleration.x || 0);
+      this.accelerationY.push(this.motionData.acceleration.y || 0);
+      this.accelerationZ.push(this.motionData.acceleration.z || 0);
+    }
+
+    // Añade los valores de giroscopio a las gráficas
+    if (this.motionData.rotation) {
+      this.alpha.push(this.motionData.rotation.alpha || 0);
+      this.beta.push(this.motionData.rotation.beta || 0);
+      this.gamma.push(this.motionData.rotation.gamma || 0);
+    }
+
+    // Limita la cantidad de datos en la gráfica para evitar que se sobrecargue
+    if (this.time.length > 50) {
+      this.time.shift();
+      this.accelerationX.shift();
+      this.accelerationY.shift();
+      this.accelerationZ.shift();
+      this.alpha.shift();
+      this.beta.shift();
+      this.gamma.shift();
+    }
+
+    // Actualiza los gráficos
+    if (this.accelerationChart) {
+      this.accelerationChart.data.labels = this.time.map(t => new Date(t).toLocaleTimeString()); // Muestra el tiempo en formato de hora
+      this.accelerationChart.data.datasets[0].data = this.accelerationX;
+      this.accelerationChart.data.datasets[1].data = this.accelerationY;
+      this.accelerationChart.data.datasets[2].data = this.accelerationZ;
       this.accelerationChart.update();
     }
 
-    // Actualiza los gráficos con los datos de giroscopio
-    if (this.gyroscopeChart && this.motionData.rotation) {
-      this.gyroscopeChart.data.datasets[0].data = [
-        this.motionData.rotation.alpha || 0,
-        this.motionData.rotation.beta || 0,
-        this.motionData.rotation.gamma || 0
-      ];
+    if (this.gyroscopeChart) {
+      this.gyroscopeChart.data.labels = this.time.map(t => new Date(t).toLocaleTimeString());
+      this.gyroscopeChart.data.datasets[0].data = this.alpha;
+      this.gyroscopeChart.data.datasets[1].data = this.beta;
+      this.gyroscopeChart.data.datasets[2].data = this.gamma;
       this.gyroscopeChart.update();
     }
   }
 
-  // Configuración del gráfico
-  private getChartConfig(label: string, labels: string[]): ChartConfiguration {
+  // Configuración del gráfico de aceleración
+  private getAccelerationChartConfig(): ChartConfiguration {
     return {
-      type: 'bar', // Gráfico de barras
+      type: 'line',
       data: {
-        labels: labels, // Etiquetas para el eje X
-        datasets: [{
-          label: label,
-          data: [0, 0, 0], // Valores iniciales (serán actualizados más tarde)
-          backgroundColor: ['#ff6384', '#ff9f40', '#ffcd56'],
-          borderColor: ['#ff6384', '#ff9f40', '#ffcd56'],
-          borderWidth: 1
-        }]
+        labels: this.time.map(t => new Date(t).toLocaleTimeString()),
+        datasets: [
+          {
+            label: 'Aceleración X',
+            data: this.accelerationX,
+            borderColor: '#ff6384',
+            backgroundColor: 'rgba(255, 99, 132, 0.2)',
+            fill: true,
+            tension: 0.1
+          },
+          {
+            label: 'Aceleración Y',
+            data: this.accelerationY,
+            borderColor: '#ff9f40',
+            backgroundColor: 'rgba(255, 159, 64, 0.2)',
+            fill: true,
+            tension: 0.1
+          },
+          {
+            label: 'Aceleración Z',
+            data: this.accelerationZ,
+            borderColor: '#ffcd56',
+            backgroundColor: 'rgba(255, 205, 86, 0.2)',
+            fill: true,
+            tension: 0.1
+          }
+        ]
       },
       options: {
-        responsive: true, // Asegura que el gráfico sea responsive
-        maintainAspectRatio: false, // Ajusta el tamaño del gráfico
+        responsive: true,
+        maintainAspectRatio: false,
         scales: {
           y: {
-            type: 'linear', // Escala lineal para el eje Y
-            beginAtZero: true // Comienza desde 0 en el eje Y
+            type: 'linear',
+            beginAtZero: true
+          }
+        }
+      }
+    };
+  }
+
+  // Configuración del gráfico de giroscopio
+  private getGyroscopeChartConfig(): ChartConfiguration {
+    return {
+      type: 'line',
+      data: {
+        labels: this.time.map(t => new Date(t).toLocaleTimeString()),
+        datasets: [
+          {
+            label: 'Alpha',
+            data: this.alpha,
+            borderColor: '#36a2eb',
+            backgroundColor: 'rgba(54, 162, 235, 0.2)',
+            fill: true,
+            tension: 0.1
+          },
+          {
+            label: 'Beta',
+            data: this.beta,
+            borderColor: '#4bc0c0',
+            backgroundColor: 'rgba(75, 192, 192, 0.2)',
+            fill: true,
+            tension: 0.1
+          },
+          {
+            label: 'Gamma',
+            data: this.gamma,
+            borderColor: '#ffcd56',
+            backgroundColor: 'rgba(255, 205, 86, 0.2)',
+            fill: true,
+            tension: 0.1
+          }
+        ]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          y: {
+            type: 'linear',
+            beginAtZero: true
           }
         }
       }
